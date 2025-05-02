@@ -14,6 +14,18 @@ class TransactionService {
     return transactions;
   }
 
+  // Mendapatkan semua transaksi (khusus admin)
+  Future<List<Transaction>> getAllTransactions() async {
+    final response = await HttpHelper.get('admin/transactions');
+    List<Transaction> transactions = [];
+
+    for (var item in response['data']) {
+      transactions.add(Transaction.fromJson(item));
+    }
+
+    return transactions;
+  }
+
   // Mendapatkan detail transaksi berdasarkan ID
   Future<Transaction> getTransactionById(int id) async {
     final response = await HttpHelper.get('transactions/$id');
@@ -77,5 +89,28 @@ class TransactionService {
     }
 
     return methods;
+  }
+
+  // Admin: Filter transaksi berdasarkan tanggal
+  Future<List<Transaction>> getTransactionsByDateRange(DateTime startDate, DateTime endDate) async {
+    final formattedStartDate = startDate.toIso8601String().split('T')[0];
+    final formattedEndDate = endDate.toIso8601String().split('T')[0];
+
+    final response = await HttpHelper.get(
+        'admin/transactions/filter?start_date=$formattedStartDate&end_date=$formattedEndDate'
+    );
+
+    List<Transaction> transactions = [];
+    for (var item in response['data']) {
+      transactions.add(Transaction.fromJson(item));
+    }
+
+    return transactions;
+  }
+
+  // Admin: Mendapatkan statistik transaksi
+  Future<Map<String, dynamic>> getTransactionStatistics() async {
+    final response = await HttpHelper.get('admin/transactions/statistics');
+    return response['data'];
   }
 }

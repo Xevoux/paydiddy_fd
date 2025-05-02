@@ -353,7 +353,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
               // Promo Banner - Fixed height to prevent overflow
               Container(
-                height: 200, // Increased height to accommodate content
+                height: 200,
                 padding: const EdgeInsets.only(left: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,7 +375,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           final promo = _promoList[index];
                           return Container(
                             width: 280,
-                            margin: const EdgeInsets.only(right: 16, bottom: 10), // Added bottom margin
+                            height: 160, // Tambahkan tinggi tetap
+                            margin: const EdgeInsets.only(right: 16, bottom: 10),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
@@ -409,37 +410,41 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
                                 // Content
                                 Padding(
-                                  padding: const EdgeInsets.all(20),
+                                  padding: const EdgeInsets.all(16), // Kurangi padding
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // Atur spacing
                                     children: [
-                                      Text(
-                                        promo['title'],
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            promo['title'],
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4), // Kurangi spacing
+                                          Text(
+                                            promo['desc'],
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.8),
+                                              fontSize: 14,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        promo['desc'],
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.8),
-                                          fontSize: 14,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      // Action button with constraints to prevent overflow
+
+                                      // Action button
                                       ConstrainedBox(
                                         constraints: const BoxConstraints(
                                           maxWidth: 150,
-                                          maxHeight: 32,
                                         ),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(

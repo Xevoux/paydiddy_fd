@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:paydiddy/providers/user_provider.dart';
 import 'package:paydiddy/screens/auth/login_screen.dart';
+import 'package:paydiddy/screens/customer/customer_home_screen.dart';
+import 'package:paydiddy/screens/customer/game_list_screen.dart';
+import 'package:paydiddy/screens/customer/transaction_history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -17,6 +20,7 @@ class CustomerSettingsScreen extends StatefulWidget {
 class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
   String _appVersion = '';
   bool _isLoading = false;
+  int _currentIndex = 3;
 
   @override
   void initState() {
@@ -365,7 +369,6 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                 );
               },
             ),
-
             const SizedBox(height: 24),
 
             // Logout Button
@@ -395,6 +398,55 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+
+          // Handle navigation based on index
+          switch (index) {
+            case 0: // Home - Already on home
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CustomerHomeScreen(),
+                ),
+              ).then((_) => setState(() => _currentIndex = 3));
+              break;
+            case 1: // Top Up - Navigate to game list
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GameListScreen(
+                    title: 'Semua Game',
+                  ),
+                ),
+              ).then((_) => setState(() => _currentIndex = 3));
+              break;
+            case 2: // Transactions - Navigate to transaction history
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TransactionHistoryScreen(),
+                ),
+              ).then((_) => setState(() => _currentIndex = 3));
+              break;
+            case 3: // Profile - Already on settings
+              break;
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue[900],
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Top Up'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Transaksi'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        ],
       ),
     );
   }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:paydiddy/models/game.dart';
+import 'package:paydiddy/screens/customer/customer_home_screen.dart';
+import 'package:paydiddy/screens/customer/customer_settings_screen.dart';
+import 'package:paydiddy/screens/customer/transaction_history_screen.dart';
 import 'package:paydiddy/services/game_service.dart';
 import 'package:paydiddy/screens/customer/game_detail_screen.dart';
 
@@ -20,6 +23,7 @@ class _GameListScreenState extends State<GameListScreen> {
   String? _error;
   final _searchController = TextEditingController();
   bool _isSearching = false;
+  int _currentIndex = 1;
 
   @override
   void initState() {
@@ -84,6 +88,43 @@ class _GameListScreenState extends State<GameListScreen> {
     }
   }
 
+  void _onNavTapped(int index) {
+    if (_currentIndex == index) return;
+
+    setState(() {
+      _currentIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CustomerHomeScreen(),
+          ),
+        ).then((_) => setState(() => _currentIndex = 1));
+        break;
+      case 1:
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TransactionHistoryScreen(),
+          ),
+        ).then((_) => setState(() => _currentIndex = 1));
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CustomerSettingsScreen(),
+          ),
+        ).then((_) => setState(() => _currentIndex = 1));
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,6 +163,19 @@ class _GameListScreenState extends State<GameListScreen> {
         ],
       ),
       body: _buildContent(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue[900],
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Top Up'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Transaksi'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        ],
+      ),
     );
   }
 

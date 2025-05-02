@@ -14,6 +14,7 @@ import 'package:paydiddy/screens/customer/game_list_screen.dart';
 import 'package:paydiddy/screens/customer/top_up_screen.dart';
 import 'package:paydiddy/screens/customer/customer_settings_screen.dart';
 import 'package:paydiddy/screens/admin/admin_settings_screen.dart';
+import 'package:paydiddy/screens/admin/transaction_management_screen.dart';
 import 'package:paydiddy/screens/splash_screen.dart';
 import 'package:paydiddy/screens/customer/edit_profile_screen.dart';
 
@@ -33,6 +34,7 @@ class AppRoutes {
   static const String customerSettings = '/customer/settings';
   static const String adminSettings = '/admin/settings';
   static const String editProfile = '/customer/edit-profile';
+  static const String adminTransactionManagement = '/admin/transactions';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -109,6 +111,9 @@ class AppRoutes {
 
       case editProfile:
         return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+
+      case adminTransactionManagement:
+        return MaterialPageRoute(builder: (_) => const TransactionManagementScreen());
 
       default:
       // If the route is not found, return a 404 page
@@ -218,5 +223,9 @@ class AppRoutes {
 
   static void navigateToEditProfile(BuildContext context) {
     Navigator.pushNamed(context, editProfile);
+  }
+
+  static void navigateToAdminTransactionManagement(BuildContext context) {
+    Navigator.pushNamed(context, adminTransactionManagement);
   }
 }

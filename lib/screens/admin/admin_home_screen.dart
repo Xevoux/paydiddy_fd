@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:paydiddy/models/transaction.dart';
 import 'package:paydiddy/providers/user_provider.dart';
+import 'package:paydiddy/providers/transaction_provider.dart';
 import 'package:paydiddy/screens/auth/login_screen.dart';
+import 'package:paydiddy/config/app_routes.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({Key? key}) : super(key: key);
@@ -12,11 +16,20 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _isLoading = true;
+  bool _isLoadingStats = true;
+  Map<String, dynamic> _stats = {
+    'totalUsers': 0,
+    'totalTransactions': 0,
+    'totalRevenue': 0,
+    'popularGame': '',
+  };
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadStats();
+    _loadRecentTransactions();
   }
 
   _loadUserData() async {
@@ -34,6 +47,51 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  _loadStats() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+      final statistics = await transactionProvider.getTransactionStatistics();
+
+      setState(() {
+        _stats = {
+          'totalUsers': statistics['total_users'] ?? 0,
+          'totalTransactions': statistics['total_transactions'] ?? 0,
+          'totalRevenue': statistics['total_revenue'] ?? 0,
+          'popularGame': statistics['popular_games']?.isNotEmpty ?
+          statistics['popular_games'][0]['game_name'] : 'N/A',
+        };
+      });
+    } catch (e) {
+      print("Error loading stats: $e");
+      // Fallback to default statistics on error
+      setState(() {
+        _stats = {
+          'totalUsers': 0,
+          'totalTransactions': 0,
+          'totalRevenue': 0,
+          'popularGame': 'N/A',
+        };
+      });
+    } finally {
+      setState(() {
+        _isLoadingStats = false;
+      });
+    }
+  }
+
+  _loadRecentTransactions() async {
+    try {
+      final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+      await transactionProvider.fetchAllTransactions();
+    } catch (e) {
+      print("Error loading transactions: $e");
     }
   }
 
@@ -59,10 +117,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
+  _openWebAdmin(String section) async {
+    final url = 'https://admin.paydiddy.com/$section';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tidak dapat membuka $url'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final transactionProvider = Provider.of<TransactionProvider>(context);
     final userName = userProvider.user?.name ?? "Admin";
+    final recentTransactions = transactionProvider.allTransactions.take(5).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -74,6 +148,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              AppRoutes.navigateToAdminSettings(context);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
           ),
@@ -84,6 +164,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           : RefreshIndicator(
         onRefresh: () async {
           await _loadUserData();
+          await _loadStats();
+          await _loadRecentTransactions();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -157,38 +239,49 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const SizedBox(height: 16),
 
               // Row of Stats
-              Row(
+              _isLoadingStats
+                  ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 30.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+                  : Column(
                 children: [
-                  _buildStatCard(
-                    'Total Users',
-                    '152',
-                    Icons.people,
-                    Colors.blue,
+                  Row(
+                    children: [
+                      _buildStatCard(
+                        'Total Users',
+                        _stats['totalUsers'].toString(),
+                        Icons.people,
+                        Colors.blue,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildStatCard(
+                        'Transaksi',
+                        _stats['totalTransactions'].toString(),
+                        Icons.payment,
+                        Colors.green,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  _buildStatCard(
-                    'Transaksi',
-                    '438',
-                    Icons.payment,
-                    Colors.green,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _buildStatCard(
-                    'Pendapatan',
-                    'Rp 24.5jt',
-                    Icons.monetization_on,
-                    Colors.amber,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildStatCard(
-                    'Game Populer',
-                    'MLBB',
-                    Icons.games,
-                    Colors.purple,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildStatCard(
+                        'Pendapatan',
+                        'Rp ${(_stats['totalRevenue'] / 1000000).toStringAsFixed(1)}jt',
+                        Icons.monetization_on,
+                        Colors.amber,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildStatCard(
+                        'Game Populer',
+                        _stats['popularGame'],
+                        Icons.games,
+                        Colors.purple,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -213,31 +306,74 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 children: [
-                  _buildMenuCard('Kelola Game', Icons.games),
-                  _buildMenuCard('Kelola User', Icons.people),
-                  _buildMenuCard('Transaksi', Icons.receipt_long),
-                  _buildMenuCard('Pengaturan', Icons.settings),
+                  _buildMenuCard('Kelola Game', Icons.games, () {
+                    _openWebAdmin('games');
+                  }),
+                  _buildMenuCard('Kelola User', Icons.people, () {
+                    _openWebAdmin('users');
+                  }),
+                  _buildMenuCard('Transaksi', Icons.receipt_long, () {
+                    AppRoutes.navigateToAdminTransactionManagement(context);
+                  }),
+                  _buildMenuCard('Pengaturan', Icons.settings, () {
+                    AppRoutes.navigateToAdminSettings(context);
+                  }),
                 ],
               ),
 
               const SizedBox(height: 24),
 
               // Recent Transactions
-              const Text(
-                'Transaksi Terbaru',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Transaksi Terbaru',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      AppRoutes.navigateToAdminTransactionManagement(context);
+                    },
+                    child: const Text('Lihat Semua'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // Transaction List
-              ListView.builder(
+              transactionProvider.isLoading
+                  ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 30.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+                  : recentTransactions.isEmpty
+                  ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 30.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.receipt_long, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada transaksi',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+                  : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5,
+                itemCount: recentTransactions.length,
                 itemBuilder: (context, index) {
+                  final transaction = recentTransactions[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 2,
@@ -246,28 +382,41 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         backgroundColor: Colors.blue[100],
                         child: const Icon(Icons.receipt, color: Colors.blue),
                       ),
-                      title: Text('Transaksi #${1000 + index}'),
-                      subtitle: const Text('Mobile Legends: 100 Diamonds'),
+                      title: Text('${transaction.referenceId}'),
+                      subtitle: Text(
+                        '${transaction.game?.name ?? 'Unknown'} - ${transaction.package?.name ?? 'Unknown'}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'Rp 25.000',
+                            transaction.formattedAmount,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.blue[900],
                             ),
                           ),
-                          const Text(
-                            'Success',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 12,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(transaction.status).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              transaction.statusText,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getStatusColor(transaction.status),
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      onTap: () {
+                        _showTransactionDetails(transaction);
+                      },
                     ),
                   );
                 },
@@ -275,6 +424,129 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case Transaction.STATUS_PENDING:
+        return Colors.orange;
+      case Transaction.STATUS_PROCESSING:
+        return Colors.blue;
+      case Transaction.STATUS_SUCCESS:
+        return Colors.green;
+      case Transaction.STATUS_FAILED:
+        return Colors.red;
+      case Transaction.STATUS_CANCELLED:
+        return Colors.grey;
+      case Transaction.STATUS_REFUNDED:
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _showTransactionDetails(Transaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Detail Transaksi'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailItem('ID Transaksi', transaction.referenceId),
+              _buildDetailItem('Game', transaction.game?.name ?? 'Unknown'),
+              _buildDetailItem('Paket', transaction.package?.name ?? 'Unknown'),
+              _buildDetailItem('Jumlah', transaction.formattedAmount),
+              _buildDetailItem('Game ID', transaction.gameUserId),
+              if (transaction.gameUsername != null && transaction.gameUsername!.isNotEmpty)
+                _buildDetailItem('Username', transaction.gameUsername!),
+              _buildDetailItem('Status', transaction.statusText),
+              _buildDetailItem('Metode Pembayaran', transaction.paymentMethod ?? '-'),
+              _buildDetailItem('Tanggal', transaction.formattedDate),
+              _buildDetailItem('User ID', transaction.userId.toString()),
+            ],
+          ),
+        ),
+        actions: [
+          if (transaction.isPending)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _confirmCancelTransaction(transaction);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Batalkan Transaksi'),
+            ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              AppRoutes.navigateToAdminTransactionManagement(context);
+            },
+            child: const Text('Lihat di Manajemen Transaksi'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[900],
+            ),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmCancelTransaction(Transaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Batalkan Transaksi'),
+        content: Text('Apakah Anda yakin ingin membatalkan transaksi ${transaction.referenceId}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tidak'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() {
+                _isLoading = true;
+              });
+              try {
+                final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+                await transactionProvider.cancelTransaction(transaction.id);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Transaksi berhasil dibatalkan'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+
+                // Refresh data
+                await _loadRecentTransactions();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } finally {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+            child: const Text('Ya, Batalkan'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
       ),
     );
   }
@@ -298,7 +570,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: color.shade800,
+                color: color,
               ),
             ),
             const SizedBox(height: 4),
@@ -315,14 +587,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildMenuCard(String title, IconData icon) {
+  Widget _buildMenuCard(String title, IconData icon, VoidCallback onTap) {
     return InkWell(
-      onTap: () {
-        // Navigate to respective screens (to be implemented)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Menu: $title (akan diimplementasikan)')),
-        );
-      },
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -359,8 +626,29 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
     );
   }
-}
 
-extension on Color {
-  get shade800 => null;
+  Widget _buildDetailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+            ),
+          ),
+          const Divider(),
+        ],
+      ),
+    );
+  }
 }

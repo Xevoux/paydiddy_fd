@@ -1,7 +1,15 @@
+// Pastikan sudah ada dependency ini di pubspec.yaml
+// flutter_datetime_picker_plus: ^2.0.1
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:paydiddy/models/transaction.dart';
-import 'package:paydiddy/services/transaction_service.dart';
+import 'package:paydiddy/screens/customer/customer_home_screen.dart';
+import 'package:paydiddy/screens/customer/game_list_screen.dart';
+import 'package:paydiddy/screens/customer/customer_settings_screen.dart';
 import 'package:paydiddy/screens/customer/transaction_detail_screen.dart';
+import 'package:paydiddy/services/transaction_service.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({Key? key}) : super(key: key);
@@ -10,33 +18,34 @@ class TransactionHistoryScreen extends StatefulWidget {
   State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
 }
 
-class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> with SingleTickerProviderStateMixin {
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   final TransactionService _transactionService = TransactionService();
+  final TextEditingController _searchController = TextEditingController();
   List<Transaction> _transactions = [];
   List<Transaction> _filteredTransactions = [];
   bool _isLoading = true;
   String? _error;
+  int _currentIndex = 2;
 
-  late TabController _tabController;
-
-  // Status filter options
-  final List<String> _statusFilters = ['Semua', 'Pending', 'Berhasil', 'Diproses', 'Gagal', 'Dibatalkan'];
+  final List<String> _statusFilters = ['Semua', 'Menunggu Pembayaran', 'Berhasil', 'Diproses', 'Gagal', 'Dibatalkan'];
   String _selectedStatus = 'Semua';
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _searchController.addListener(_applyFilters);
     _loadTransactions();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  _loadTransactions() async {
+  Future<void> _loadTransactions() async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -44,38 +53,68 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
 
     try {
       final transactions = await _transactionService.getUserTransactions();
-
-      setState(() {
-        _transactions = transactions;
-        _applyFilters();
-        _isLoading = false;
-      });
+      _transactions = transactions;
+      _applyFilters();
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  _applyFilters() {
-    if (_selectedStatus == 'Semua') {
-      _filteredTransactions = List.from(_transactions);
-    } else {
-      String statusCode = _getStatusCodeFromDisplay(_selectedStatus);
-      _filteredTransactions = _transactions.where((t) => t.status == statusCode).toList();
+  void _applyFilters() {
+    List<Transaction> filtered = List.from(_transactions);
+
+    if (_selectedStatus != 'Semua') {
+      String code = _getStatusCodeFromDisplay(_selectedStatus);
+      filtered = filtered.where((t) => t.status == code).toList();
     }
 
-    // Sort by date (newest first)
-    _filteredTransactions.sort((a, b) {
-      if (a.createdAt == null || b.createdAt == null) return 0;
-      return b.createdAt!.compareTo(a.createdAt!);
+    if (_startDate != null) {
+      filtered = filtered.where((t) {
+        final createdAt = DateTime.tryParse(t.createdAt ?? '');
+        if (createdAt == null) return false;
+        return createdAt.isAfter(_startDate!) || createdAt.isAtSameMomentAs(_startDate!);
+      }).toList();
+    }
+
+    if (_endDate != null) {
+      final end = _endDate!.add(const Duration(days: 1));
+      filtered = filtered.where((t) {
+        final createdAt = DateTime.tryParse(t.createdAt ?? '');
+        if (createdAt == null) return false;
+        return createdAt.isBefore(end);
+      }).toList();
+    }
+
+    if (_searchController.text.isNotEmpty) {
+      final term = _searchController.text.toLowerCase();
+      filtered = filtered.where((t) {
+        final text = [
+          t.referenceId.toLowerCase(),
+          t.gameUserId.toLowerCase(),
+          t.game?.name?.toLowerCase() ?? '',
+          t.gameUsername?.toLowerCase() ?? '',
+        ].join(' ');
+        return text.contains(term);
+      }).toList();
+    }
+
+    filtered.sort((a, b) {
+      final aDate = DateTime.tryParse(a.createdAt ?? '');
+      final bDate = DateTime.tryParse(b.createdAt ?? '');
+      if (aDate == null || bDate == null) return 0;
+      return bDate.compareTo(aDate);
+    });
+
+    setState(() {
+      _filteredTransactions = filtered;
     });
   }
 
-  String _getStatusCodeFromDisplay(String displayStatus) {
-    switch (displayStatus.toLowerCase()) {
-      case 'pending':
+  String _getStatusCodeFromDisplay(String status) {
+    switch (status.toLowerCase()) {
+      case 'menunggu pembayaran':
         return Transaction.STATUS_PENDING;
       case 'berhasil':
         return Transaction.STATUS_SUCCESS;
@@ -109,351 +148,265 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
     }
   }
 
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case Transaction.STATUS_PENDING:
-        return Icons.access_time;
-      case Transaction.STATUS_PROCESSING:
-        return Icons.sync;
-      case Transaction.STATUS_SUCCESS:
-        return Icons.check_circle;
-      case Transaction.STATUS_FAILED:
-        return Icons.error;
-      case Transaction.STATUS_CANCELLED:
-        return Icons.cancel;
-      case Transaction.STATUS_REFUNDED:
-        return Icons.replay;
-      default:
-        return Icons.help;
-    }
+  void _selectDateRange() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Rentang Tanggal'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(_startDate == null
+                  ? 'Tanggal Mulai'
+                  : 'Mulai: ${DateFormat('dd MMM yyyy').format(_startDate!)}'),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () {
+                DatePicker.showDatePicker(
+                  context,
+                  currentTime: _startDate ?? DateTime.now(),
+                  onConfirm: (date) => setState(() => _startDate = date),
+                  locale: LocaleType.id,
+                );
+              },
+            ),
+            ListTile(
+              title: Text(_endDate == null
+                  ? 'Tanggal Akhir'
+                  : 'Akhir: ${DateFormat('dd MMM yyyy').format(_endDate!)}'),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () {
+                DatePicker.showDatePicker(
+                  context,
+                  currentTime: _endDate ?? DateTime.now(),
+                  onConfirm: (date) => setState(() => _endDate = date),
+                  locale: LocaleType.id,
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _startDate = null;
+                _endDate = null;
+              });
+              Navigator.pop(context);
+              _applyFilters();
+            },
+            child: const Text('Reset'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _applyFilters();
+            },
+            child: const Text('Terapkan'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Riwayat Transaksi',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Riwayat Transaksi', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue[900],
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.blue[900],
-              labelColor: Colors.blue[900],
-              unselectedLabelColor: Colors.grey[600],
-              tabs: const [
-                Tab(text: 'Semua Transaksi'),
-                Tab(text: 'Filter Status'),
-              ],
-              onTap: (index) {
-                if (index == 0) {
-                  setState(() {
-                    _selectedStatus = 'Semua';
-                    _applyFilters();
-                  });
-                }
-              },
-            ),
-          ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // All Transactions Tab
-          _buildTransactionList(),
-
-          // Filter Tab
-          _buildFilterOptions(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _loadTransactions,
-        backgroundColor: Colors.blue[900],
-        child: const Icon(Icons.refresh),
-      ),
-    );
-  }
-
-  Widget _buildTransactionList() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 60,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error: $_error',
-              style: const TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadTransactions,
-              child: const Text('Coba Lagi'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_filteredTransactions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.receipt_long,
-              color: Colors.grey[400],
-              size: 60,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _selectedStatus == 'Semua'
-                  ? 'Belum ada transaksi'
-                  : 'Tidak ada transaksi $_selectedStatus',
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _loadTransactions();
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _filteredTransactions.length,
-        itemBuilder: (context, index) {
-          final transaction = _filteredTransactions[index];
-          return _buildTransactionCard(transaction);
-        },
-      ),
-    );
-  }
-
-  Widget _buildFilterOptions() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Filter berdasarkan Status',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _statusFilters.map((status) {
-              final isSelected = _selectedStatus == status;
-
-              return ChoiceChip(
-                label: Text(status),
-                selected: isSelected,
-                selectedColor: Colors.blue[100],
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.blue[900] : Colors.black,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() {
-                      _selectedStatus = status;
-                      _applyFilters();
-                      _tabController.animateTo(0); // Switch to first tab to show results
-                    });
-                  }
-                },
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 32),
-
-          ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                _selectedStatus = 'Semua';
-                _applyFilters();
-                _tabController.animateTo(0); // Switch to first tab to show results
-              });
-            },
-            icon: const Icon(Icons.clear),
-            label: const Text('Hapus Filter'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey[200],
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadTransactions,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTransactionCard(Transaction transaction) {
-    final gameName = transaction.game?.name ?? 'Unknown Game';
-    final packageName = transaction.package?.denomination ?? 'Unknown Package';
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransactionDetailScreen(
-                transaction: transaction,
-              ),
-            ),
-          ).then((_) => _loadTransactions()); // Refresh after returning
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Transaction ID and Date
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'ID: ${transaction.referenceId}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    transaction.formattedDate,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-
-              const Divider(height: 16),
-
-              // Game and Package Info
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.games,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          gameName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          packageName,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Amount and Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    transaction.formattedAmount,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[900],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(transaction.status).withOpacity(0.1),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+        children: [
+          Container(
+            color: Colors.blue[900],
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Cari ID transaksi, user ID, atau game',
+                    hintStyle: const TextStyle(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _getStatusColor(transaction.status)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _getStatusIcon(transaction.status),
-                          size: 14,
-                          color: _getStatusColor(transaction.status),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          transaction.statusText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: _getStatusColor(transaction.status),
-                          ),
-                        ),
-                      ],
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedStatus,
+                        dropdownColor: Colors.white,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        items: _statusFilters.map((status) {
+                          return DropdownMenuItem(value: status, child: Text(status));
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedStatus = value ?? 'Semua');
+                          _applyFilters();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.date_range),
+                        onPressed: _selectDateRange,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTransactions,
+              child: _filteredTransactions.isEmpty
+                  ? const Center(child: Text('Tidak ada transaksi ditemukan'))
+                  : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _filteredTransactions.length,
+                itemBuilder: (context, index) {
+                  final t = _filteredTransactions[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TransactionDetailScreen(transaction: t),
+                        ),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('ID: ${t.referenceId}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text(t.formattedDate, style: TextStyle(color: Colors.grey[600])),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.gamepad, color: Colors.blue),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(t.game?.name ?? 'Unknown Game',
+                                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                                      Text(
+                                        '${t.package?.name ?? 'Unknown Package'} (ID: ${t.gameUserId})',
+                                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(t.formattedAmount,
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue[900])),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(t.status).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        t.statusText,
+                                        style: TextStyle(
+                                            color: _getStatusColor(t.status), fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          switch (index) {
+            case 0:
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerHomeScreen()));
+              break;
+            case 1:
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const GameListScreen(title: 'Semua Game')));
+              break;
+            case 3:
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerSettingsScreen()));
+              break;
+          }
+        },
+        selectedItemColor: Colors.blue[900],
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Top Up'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Transaksi'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        ],
       ),
     );
   }

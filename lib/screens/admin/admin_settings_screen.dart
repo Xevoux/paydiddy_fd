@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:paydiddy/utils/constants.dart';
 import 'package:paydiddy/utils/validators.dart';
 
+
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
 
@@ -305,10 +306,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               title: 'Manajemen Transaksi',
               subtitle: 'Kelola data transaksi',
               onTap: () {
-                Fluttertoast.showToast(
-                  msg: 'Fitur Manajemen Transaksi akan diimplementasikan',
-                  backgroundColor: Colors.blue,
-                );
+                Navigator.pushNamed(context, '/admin/transactions');
               },
             ),
 
