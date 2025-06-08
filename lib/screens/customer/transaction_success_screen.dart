@@ -9,9 +9,9 @@ class TransactionSuccessScreen extends StatelessWidget {
   final Transaction transaction;
 
   const TransactionSuccessScreen({
-    Key? key,
+    super.key,
     required this.transaction,
-  }) : super(key: key);
+  });
 
   void _goToHome(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(

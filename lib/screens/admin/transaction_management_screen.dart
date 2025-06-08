@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 
 class TransactionManagementScreen extends StatefulWidget {
-  const TransactionManagementScreen({Key? key}) : super(key: key);
+  const TransactionManagementScreen({super.key});
 
   @override
   State<TransactionManagementScreen> createState() => _TransactionManagementScreenState();
@@ -104,7 +104,7 @@ class _TransactionManagementScreenState extends State<TransactionManagementScree
         final searchString = [
           t.referenceId.toLowerCase(),
           t.gameUserId.toLowerCase(),
-          t.game?.name?.toLowerCase() ?? '',
+          t.game?.name.toLowerCase() ?? '',
           t.gameUsername?.toLowerCase() ?? '',
           t.userId.toString(),
         ].join(' ');
@@ -176,8 +176,8 @@ class _TransactionManagementScreenState extends State<TransactionManagementScree
                 });
               }
             },
-            child: const Text('Ya, Batalkan'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Ya, Batalkan'),
           ),
         ],
       ),

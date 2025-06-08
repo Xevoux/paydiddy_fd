@@ -10,7 +10,7 @@ import 'package:paydiddy/screens/customer/customer_settings_screen.dart';
 import 'package:provider/provider.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
-  const CustomerHomeScreen({Key? key}) : super(key: key);
+  const CustomerHomeScreen({super.key});
 
   @override
   State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();

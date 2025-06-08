@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:paydiddy/models/game.dart';
 import 'package:paydiddy/models/game_package.dart';
-import 'package:paydiddy/models/transaction.dart';
 import 'package:paydiddy/services/transaction_service.dart';
 import 'package:paydiddy/screens/customer/transaction_success_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -13,12 +12,12 @@ class TopUpScreen extends StatefulWidget {
   final String gameUsername;
 
   const TopUpScreen({
-    Key? key,
+    super.key,
     required this.game,
     required this.package,
     required this.gameUserId,
     required this.gameUsername,
-  }) : super(key: key);
+  });
 
   @override
   State<TopUpScreen> createState() => _TopUpScreenState();

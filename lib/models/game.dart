@@ -1,4 +1,3 @@
-import 'package:paydiddy/models/game_package.dart';
 
 class Game {
   final int id;

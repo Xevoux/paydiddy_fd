@@ -7,12 +7,12 @@ class LoadingIndicator extends StatelessWidget {
   final bool overlay;
 
   const LoadingIndicator({
-    Key? key,
+    super.key,
     this.size = 40.0,
     this.color = Colors.blue,
     this.message,
     this.overlay = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,11 +63,11 @@ class OverlayLoadingIndicator extends StatelessWidget {
   final String? loadingMessage;
 
   const OverlayLoadingIndicator({
-    Key? key,
+    super.key,
     required this.isLoading,
     required this.child,
     this.loadingMessage,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +99,7 @@ class LoadingButton extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   const LoadingButton({
-    Key? key,
+    super.key,
     required this.isLoading,
     required this.text,
     required this.onPressed,
@@ -109,7 +109,7 @@ class LoadingButton extends StatelessWidget {
     this.height = 48.0,
     this.borderRadius = 10.0,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

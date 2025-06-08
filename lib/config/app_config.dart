@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
-  static String get apiUrl => dotenv.env['API_URL'] ?? 'http://192.168.0.106:8000/api';
+  static String get apiUrl => dotenv.env['API_URL'] ?? 'http://192.168.1.13:8000/api';
   static String get appName => dotenv.env['APP_NAME'] ?? 'PayDiddy';
   static String get appVersion => dotenv.env['APP_VERSION'] ?? '1.0.0';
   static String get appEnv => dotenv.env['APP_ENV'] ?? 'development';

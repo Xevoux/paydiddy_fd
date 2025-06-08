@@ -11,7 +11,7 @@ import 'package:paydiddy/utils/constants.dart';
 import 'package:paydiddy/utils/validators.dart';
 
 class CustomerSettingsScreen extends StatefulWidget {
-  const CustomerSettingsScreen({Key? key}) : super(key: key);
+  const CustomerSettingsScreen({super.key});
 
   @override
   State<CustomerSettingsScreen> createState() => _CustomerSettingsScreenState();

@@ -8,9 +8,9 @@ class TransactionDetailScreen extends StatefulWidget {
   final Transaction transaction;
 
   const TransactionDetailScreen({
-    Key? key,
+    super.key,
     required this.transaction,
-  }) : super(key: key);
+  });
 
   @override
   State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();

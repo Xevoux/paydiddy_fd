@@ -11,11 +11,11 @@ class GameDetailScreen extends StatefulWidget {
   final String? gameImage;
 
   const GameDetailScreen({
-    Key? key,
+    super.key,
     required this.gameId,
     required this.gameName,
     this.gameImage,
-  }) : super(key: key);
+  });
 
   @override
   State<GameDetailScreen> createState() => _GameDetailScreenState();

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:paydiddy/models/user.dart';
 import 'package:paydiddy/providers/user_provider.dart';
 import 'package:paydiddy/utils/constants.dart';
 import 'package:paydiddy/utils/validators.dart';
@@ -8,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({Key? key}) : super(key: key);
+  const EditProfileScreen({super.key});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();

@@ -12,7 +12,7 @@ import 'package:paydiddy/screens/customer/transaction_detail_screen.dart';
 import 'package:paydiddy/services/transaction_service.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
-  const TransactionHistoryScreen({Key? key}) : super(key: key);
+  const TransactionHistoryScreen({super.key});
 
   @override
   State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
@@ -93,7 +93,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         final text = [
           t.referenceId.toLowerCase(),
           t.gameUserId.toLowerCase(),
-          t.game?.name?.toLowerCase() ?? '',
+          t.game?.name.toLowerCase() ?? '',
           t.gameUsername?.toLowerCase() ?? '',
         ].join(' ');
         return text.contains(term);

@@ -10,7 +10,7 @@ class GameListScreen extends StatefulWidget {
   final String? category;
   final String title;
 
-  const GameListScreen({Key? key, this.category, this.title = 'Daftar Game'}) : super(key: key);
+  const GameListScreen({super.key, this.category, this.title = 'Daftar Game'});
 
   @override
   State<GameListScreen> createState() => _GameListScreenState();

@@ -9,7 +9,28 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # followed by an optional build number separated by a +.
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
+# In Android, build-name is used as versionName while build-C:\flutter\flutter\bin\flutter.bat doctor --verbose
+#[!] Flutter (Channel stable, 3.29.0, on Microsoft Windows [Version 10.0.26100.4061], locale en-ID) [244ms]
+#    • Flutter version 3.29.0 on channel stable at C:\flutter\flutter
+#    ! The flutter binary is not on your path. Consider adding C:\flutter\flutter\bin to your path.
+#    ! The dart binary is not on your path. Consider adding C:\flutter\flutter\bin to your path.
+#    • Upstream repository https://github.com/flutter/flutter.git
+#    • Framework revision 35c388afb5 (4 months ago), 2025-02-10 12:48:41 -0800
+#    • Engine revision f73bfc4522
+#    • Dart version 3.7.0
+#    • DevTools version 2.42.2
+#    • If those were intentional, you can disregard the above warnings; however it is recommended to use "git" directly to perform update checks and upgrades.
+#
+#[√] Windows Version (Windows 11 or higher, 24H2, 2009) [3.4s]
+#
+#[!] Android toolchain - develop for Android devices (Android SDK version 35.0.1) [223ms]
+#    • Android SDK at C:\Users\Emir\AppData\Local\Android\sdk
+#    X cmdline-tools component is missing
+#      Run `path/to/sdkmanager --install "cmdline-tools;latest"`
+#      See https://developer.android.com/studio/command-line for more details.
+#    X Android license status unknown.
+#      Run `flutter doctor --android-licenses` to accept the SDK licenses.
+#      See https://flutter.dev/to/windows-android-setup for more details.number used as versionCode.
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
 # In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
 # Read more about iOS versioning at

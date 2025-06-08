@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminHomeScreen extends StatefulWidget {
-  const AdminHomeScreen({Key? key}) : super(key: key);
+  const AdminHomeScreen({super.key});
 
   @override
   State<AdminHomeScreen> createState() => _AdminHomeScreenState();
@@ -382,7 +382,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         backgroundColor: Colors.blue[100],
                         child: const Icon(Icons.receipt, color: Colors.blue),
                       ),
-                      title: Text('${transaction.referenceId}'),
+                      title: Text(transaction.referenceId),
                       subtitle: Text(
                         '${transaction.game?.name ?? 'Unknown'} - ${transaction.package?.name ?? 'Unknown'}',
                         overflow: TextOverflow.ellipsis,
@@ -543,8 +543,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 });
               }
             },
-            child: const Text('Ya, Batalkan'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Ya, Batalkan'),
           ),
         ],
       ),

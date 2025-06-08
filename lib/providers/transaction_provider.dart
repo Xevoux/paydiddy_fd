@@ -295,7 +295,7 @@ class TransactionProvider extends ChangeNotifier {
         }
 
         if (params.isNotEmpty) {
-          endpoint += '?' + params.join('&');
+          endpoint += '?${params.join('&')}';
         }
       }
 

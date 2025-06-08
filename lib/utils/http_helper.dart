@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HttpHelper {
-  static final String baseUrl = dotenv.env['API_URL'] ?? 'http://192.168.0.106:8000/api';
+  static final String baseUrl = dotenv.env['API_URL'] ?? 'http://192.168.1.13:8000/api';
 
   // Headers untuk request
   static Future<Map<String, String>> _getHeaders() async {
