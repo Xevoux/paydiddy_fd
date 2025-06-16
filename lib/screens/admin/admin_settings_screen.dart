@@ -275,19 +275,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildSettingCard(
-              icon: Icons.people,
-              iconColor: Colors.red,
-              title: 'Manajemen Pengguna',
-              subtitle: 'Kelola data pengguna',
-              onTap: () {
-                Fluttertoast.showToast(
-                  msg: 'Fitur Manajemen Pengguna akan diimplementasikan',
-                  backgroundColor: Colors.blue,
-                );
-              },
-            ),
             _buildSettingCard(
               icon: Icons.games,
               iconColor: Colors.green,
@@ -295,7 +282,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               subtitle: 'Kelola data game dan paket',
               onTap: () {
                 Fluttertoast.showToast(
-                  msg: 'Fitur Manajemen Game akan diimplementasikan',
+                  msg: 'Fitur Berupa Tampilan Web',
                   backgroundColor: Colors.blue,
                 );
               },

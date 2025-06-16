@@ -309,9 +309,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   _buildMenuCard('Kelola Game', Icons.games, () {
                     _openWebAdmin('games');
                   }),
-                  _buildMenuCard('Kelola User', Icons.people, () {
-                    _openWebAdmin('users');
-                  }),
                   _buildMenuCard('Transaksi', Icons.receipt_long, () {
                     AppRoutes.navigateToAdminTransactionManagement(context);
                   }),
